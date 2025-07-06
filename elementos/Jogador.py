@@ -2,7 +2,7 @@ import pygame
 from time import time
 import pygame.image
 
-from classes.Bullet import Bullet
+from elementos.Bala import Bala
 from constants.global_func import *
 from constants.global_var import *
 from constants.global_imports import *
@@ -77,7 +77,7 @@ class Player:
             self.firing = False
 
     def fire(self):
-        Bullet(self.rect.center[0] - SPRITE_SIZE / 2, self.rect.center[1] - SPRITE_SIZE, 1)
+        Bala(self.rect.center[0] - SPRITE_SIZE / 2, self.rect.center[1] - SPRITE_SIZE, 1)
         pygame.mixer.Sound.play(pygame.mixer.Sound('assets/shoot.mp3'))
 
     def update(self, dt, last_time):
@@ -96,11 +96,11 @@ class Player:
         
         
 
-        for bloc in Bullet.enemylocs:
+        for bloc in Bala.tiros_inimigos:
             if self.rect.x - self.rect.width/2+25 < bloc[0] < self.rect.x + self.rect.height/2 and self.rect.y - self.rect.height/2+30 < bloc[1] < self.rect.y + self.rect.height/2:
                 self.life -= 1 
                 self.explosion.create(bloc[0], bloc[1], 1)
-                Bullet.enemylocs.remove(bloc)
+                Bala.tiros_inimigos.remove(bloc)
                 
         self.animate()
 

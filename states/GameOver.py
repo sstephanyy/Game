@@ -6,7 +6,7 @@ from constants.global_func import *
 class Exit(GameState):
     def __init__(self):
         super().__init__()
-        self.next_state = 'Pause'
+        self.next_state = 'Pausa'
         
 
     def start(self):
@@ -38,11 +38,11 @@ class Exit(GameState):
                     pygame.quit()
                     sys.exit()
                 elif self.selected == 2:
-                    self.next_state = 'Pause'
+                    self.next_state = 'Pausa'
                     self.done = True
             if event.key in CONTROLS['ESC']:
                 pygame.mixer.Sound.play(pygame.mixer.Sound('assets/impactMetal_002.ogg'))
-                self.next_state = 'Pause'
+                self.next_state = 'Pausa'
                 self.done = True
 
 

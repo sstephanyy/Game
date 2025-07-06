@@ -1,27 +1,27 @@
-from classes.Bullet import Bullet
-from classes.Enemy import *
-from classes.Player import Player
+from elementos.Bala import Bala
+from elementos.Inimigo import *
+from elementos.Jogador import Player
 
 from states.Menu import Menu
-from states.Pause import *
+from states.Pausa import *
 from states.GameState import GameState
-from states.Options import Options
 from states.GameOver import *
 from constants.global_imports import *
 from constants.global_var import *
 from constants.global_func import *
 
-
 pygame.init()
 clock = pygame.time.Clock()
 
+# Define o modo de exibição da janela (tela cheia ou janela comum)
 if config.set_fullscreen:
-    screen = pygame.display.set_mode(config.window_size, pygame.FULLSCREEN, vsync=True)
-else:                       
-    screen = pygame.display.set_mode(config.window_size, vsync=True)
+    tela = pygame.display.set_mode(config.window_size, pygame.FULLSCREEN, vsync=True)
+else:
+    tela = pygame.display.set_mode(config.window_size, vsync=True)
 
-last_time = time()
+ultimo_tempo = time()
 
+# Música de fundo
 pygame.mixer.init()
 pygame.mixer.music.load("assets/Mercury.wav")
 pygame.mixer.music.play(-1)
@@ -29,177 +29,160 @@ pygame.mixer.music.set_volume(0.3)
 
 
 class Jogo(GameState):
-    level = 1
+    fase = 1
 
-    def __init__(self, screen=screen):
+    def __init__(self, tela=tela):
         super().__init__()
-        self.player = Player((config.window_size[0] / 2, (config.window_size[1] / 2) + 150))
-        self.background_fall = Fall(300)
-        self.bullets = Bullet(self.player.rect[0] + SPRITE_SIZE, self.player.rect[1] + SPRITE_SIZE / 2, 5)
+        self.jogador = Player((config.window_size[0] / 2, (config.window_size[1] / 2) + 150))
+        self.efeito_fundo = Fall(300)
+        self.balas = Bala(self.jogador.rect[0] + SPRITE_SIZE, self.jogador.rect[1] + SPRITE_SIZE / 2, 5)
 
-        self.next_state = "Pause"
-        self.last_time = last_time
-        self.level = 1
-        self.enemies_spawned = False
-        
-        self.backgrounds = []
-        for i in range(1, 10):  # tenta carregar de bg1.png até bg9.png
-            path = f"assets/backgrounds/bg{i}.png"
+        self.next_state = "Pausa"
+        self.ultimo_tempo = ultimo_tempo
+        self.fase = 1
+        self.inimigos_criados = False
+
+        self.fundos = []
+        for i in range(1, 10):  # Tenta carregar bg1.png até bg9.png
+            caminho = f"assets/backgrounds/bg{i}.png"
             try:
-                bg = pygame.image.load(path).convert()
-                self.backgrounds.append(bg)
+                imagem_fundo = pygame.image.load(caminho).convert()
+                self.fundos.append(imagem_fundo)
             except FileNotFoundError:
-                break  # para de tentar se não encontrar mais arquivos
+                break  # Para ao não encontrar mais imagens
 
-        self.bg_scroll_y = 0
-        self.bg_speed = 1
-        
-        self.heart_img = pygame.image.load('assets/heart.png').convert_alpha()
-        self.heart_img = pygame.transform.scale(self.heart_img, (40, 40))
+        self.scroll_y = 0
+        self.velocidade_scroll = 1
+
+        self.img_coracao = pygame.image.load('assets/heart.png').convert_alpha()
+        self.img_coracao = pygame.transform.scale(self.img_coracao, (40, 40))
 
     def start(self):
-        if Player.getLife(self.player) <= 0:
-            del self.player
-            [instance.kill() for instance in Enemy1.instancelist]
-            [instance.kill() for instance in Enemy2.instancelist]
-            [instance.kill() for instance in Enemy3.instancelist]
-            self.level = 1
-            self.player = Player((config.window_size[0] / 2, (config.window_size[1] / 2) + 150))
-            self.next_state = "Pause"
-            self.enemies_spawned = False
+        if Player.getLife(self.jogador) <= 0:
+            del self.jogador
+            [instancia.eliminar() for instancia in InimigoMenor.lista_instancias[:]]
+            [instancia.eliminar() for instancia in InimigoMedio.lista_instancias[:]]
+            [instancia.eliminar() for instancia in InimigoGrande.lista_instancias[:]]
+            self.fase = 1
+            self.jogador = Player((config.window_size[0] / 2, (config.window_size[1] / 2) + 150))
+            self.next_state = "Pausa"
+            self.inimigos_criados = False
 
-    def get_event(self, event):
-        if event.type == KEYDOWN:
-            self.player.get_input(event)
-            if event.key in CONTROLS['ESC']:
+    def get_event(self, evento):
+        if evento.type == KEYDOWN:
+            self.jogador.get_input(evento)
+            if evento.key in CONTROLS['ESC']:
                 self.done = True
-        if event.type == KEYUP:
-            self.player.get_input_keyup(event)
+        elif evento.type == KEYUP:
+            self.jogador.get_input_keyup(evento)
 
-    def update(self, surf=screen):
-        dt, self.last_time = delta_time(self.last_time)
-        
-        # Atualiza fundo com rolagem vertical
-        self.bg_scroll_y += self.bg_speed
-        if self.bg_scroll_y >= config.window_size[1]:
-            self.bg_scroll_y = 0
+    def update(self, surf=tela):
+        dt, self.ultimo_tempo = delta_time(self.ultimo_tempo)
 
-        self.bullets.update(dt, surf)
-        self.player.update(dt, self.last_time)
-        self.background_fall.update(gravity=self.level * 3 / 3)
+        # Animação de fundo com rolagem contínua
+        self.scroll_y += self.velocidade_scroll
+        if self.scroll_y >= config.window_size[1]:
+            self.scroll_y = 0
 
-        if Enemy1.instancelist:
-            for instance in Enemy1.instancelist:
-                instance.update(dt, self.last_time, surf, self.player)
-        if Enemy2.instancelist:
-            for instance in Enemy2.instancelist:
-                instance.update(dt, self.last_time, surf, self.player)
-        if Enemy3.instancelist:
-            for instance in Enemy3.instancelist:
-                instance.update(dt, self.last_time, surf, self.player)
+        self.balas.atualizar(dt, surf)
+        self.jogador.update(dt, self.ultimo_tempo)
+        self.efeito_fundo.update(gravity=self.fase)
 
-        # Verifica se todos os inimigos morreram
-        if not Enemy1.instancelist and not Enemy2.instancelist and not Enemy3.instancelist:
-            if self.enemies_spawned:  # Sobe de fase só uma vez
-                self.level += 1
-                self.enemies_spawned = False
+        for inimigos in (InimigoMenor.lista_instancias, InimigoMedio.lista_instancias, InimigoGrande.lista_instancias):
+            for instancia in inimigos:
+                instancia.update(dt, self.ultimo_tempo, surf, self.jogador)
 
-        # Gera os inimigos apenas se ainda não gerou para esta fase
-        if not self.enemies_spawned:
-            EnemyBase.spawn_enemy(self.level * 5, Enemy1)
-            EnemyBase.spawn_enemy(self.level * 2, Enemy2)
-            EnemyBase.spawn_enemy(self.level * 1, Enemy3)
-            self.enemies_spawned = True
+        # Verifica se todos os inimigos foram derrotados
+        if not InimigoMenor.lista_instancias and not InimigoMedio.lista_instancias and not InimigoGrande.lista_instancias:
+            if self.inimigos_criados:
+                self.fase += 1
+                self.inimigos_criados = False
 
-        if self.player.getLife() <= 0:
+        if not self.inimigos_criados:
+            InimigoBase.gerar_inimigos(self.fase * 5, InimigoMenor)
+            InimigoBase.gerar_inimigos(self.fase * 2, InimigoMedio)
+            InimigoBase.gerar_inimigos(self.fase * 1, InimigoGrande)
+            self.inimigos_criados = True
+
+        if self.jogador.getLife() <= 0:
             self.next_state = "GameOver"
             self.done = True
 
-    def draw(self, surf=screen):
-        
-        # Fundo com rolagem vertical contínua
-        bg = self.backgrounds[(self.level - 1) % len(self.backgrounds)]
-        bg = pygame.transform.scale(bg, config.window_size)
+    def draw(self, surf=tela):
+        fundo_atual = self.fundos[(self.fase - 1) % len(self.fundos)]
+        fundo_atual = pygame.transform.scale(fundo_atual, config.window_size)
 
-        surf.blit(bg, (0, -config.window_size[1] + self.bg_scroll_y))
-        surf.blit(bg, (0, self.bg_scroll_y))
+        surf.blit(fundo_atual, (0, -config.window_size[1] + self.scroll_y))
+        surf.blit(fundo_atual, (0, self.scroll_y))
 
-        self.player.draw(surf)
+        self.jogador.draw(surf)
 
-        vida_x = config.window_size[0] - 190
-        vida_y = config.window_size[1] - 60
+        pos_x_vida = config.window_size[0] - 190
+        pos_y_vida = config.window_size[1] - 60
 
-        text('Vida:', vida_x, vida_y, color=(255, 255, 255), original_font=False)
+        text('Vida:', pos_x_vida, pos_y_vida, color=(255, 255, 255), original_font=False)
 
-        # Pega o número de vidas
-        vidas = self.player.getLife()
+        qtd_vidas = self.jogador.getLife()
+        espacamento = 40
 
-        espaco_entre_coracoes = 40
+        for i in range(qtd_vidas):
+            coracao_x = pos_x_vida + 50 + i * espacamento
+            coracao_y = pos_y_vida - 25
+            surf.blit(self.img_coracao, (coracao_x, coracao_y))
 
-        for i in range(vidas):
-            heart_pos_x = vida_x + 50 + i * espaco_entre_coracoes
-            heart_pos_y = vida_y - 25
-            surf.blit(self.heart_img, (heart_pos_x, heart_pos_y))
-
-        fase_x = vida_x
-        fase_y = vida_y + 30
-        text(f'Fase {self.level}', fase_x, fase_y, original_font=False)
+        text(f'Fase {self.fase}', pos_x_vida, pos_y_vida + 30, original_font=False)
 
 
-class GameRunner(object):
-    def __init__(self, screen, states, start_state):
-        self.screen = screen
-        self.states = states
-        self.start_state = start_state
-        self.state = self.states[self.start_state]
+class ExecutorDoJogo:
+    def __init__(self, tela, estados, estado_inicial):
+        self.tela = tela
+        self.estados = estados
+        self.estado_atual = self.estados[estado_inicial]
 
-        self.state.start()
-        self.run()
+        self.estado_atual.start()
+        self.executar()
 
-    def run(self):
-        running = True
-        while running:
-            self.get_events()
-            self.update()
-            self.draw()
+    def executar(self):
+        ativo = True
+        while ativo:
+            self.tratar_eventos()
+            self.atualizar()
+            self.renderizar()
 
-    def get_events(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.quit()
+    def tratar_eventos(self):
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                self.encerrar()
+            self.estado_atual.get_event(evento)
 
-            self.state.get_event(event)
+    def atualizar(self):
+        self.estado_atual.update()
+        if self.estado_atual.done:
+            self.mudar_estado()
 
-    def update(self):
-        self.state.update()
-        if self.state.done:
-            self.next_state()
+    def mudar_estado(self):
+        proximo = self.estado_atual.next_state
+        self.estado_atual.done = False
+        self.estado_atual = self.estados[proximo]
+        self.estado_atual.start()
 
-    def next_state(self):
-        next_state = self.state.next_state
-        self.state.done = False
-        self.state_name = next_state
-        self.state = self.states[self.state_name]
-        self.state.start()
-
-    def quit(self):
+    def encerrar(self):
         pygame.quit()
         sys.exit()
 
-    def draw(self):
-        pygame.display.set_caption(f'Shoot \'em Up. FPS: {int(clock.get_fps())}')
+    def renderizar(self):
+        pygame.display.set_caption(f'Shoot \'em Up - FPS: {int(clock.get_fps())}')
         clock.tick(FRAME_RATE)
         pygame.display.update()
-        self.state.draw(self.screen)
+        self.estado_atual.draw(self.tela)
 
 
 if __name__ == "__main__":
-    states = {
+    estados = {
         "Menu":     Menu(),
         "Game":     Jogo(),
-        "Pause":    Pause(),
+        "Pausa":    Pausa(),
         "Exit":     Exit(),
-        "Options":  Options(),
         "GameOver": GameOver()
     }
-    game = GameRunner(screen, states, "Menu")
+    ExecutorDoJogo(tela, estados, "Menu")
