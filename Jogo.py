@@ -42,6 +42,18 @@ class Jogo(GameState):
         self.level = 1
         self.enemies_spawned = False
         
+        self.backgrounds = []
+        for i in range(1, 10):  # tenta carregar de bg1.png até bg9.png
+            path = f"assets/backgrounds/bg{i}.png"
+            try:
+                bg = pygame.image.load(path).convert()
+                self.backgrounds.append(bg)
+            except FileNotFoundError:
+                break  # para de tentar se não encontrar mais arquivos
+
+        self.bg_scroll_y = 0
+        self.bg_speed = 1
+        
         self.heart_img = pygame.image.load('assets/heart.png').convert_alpha()
         self.heart_img = pygame.transform.scale(self.heart_img, (40, 40))
 
@@ -66,6 +78,11 @@ class Jogo(GameState):
 
     def update(self, surf=screen):
         dt, self.last_time = delta_time(self.last_time)
+        
+        # Atualiza fundo com rolagem vertical
+        self.bg_scroll_y += self.bg_speed
+        if self.bg_scroll_y >= config.window_size[1]:
+            self.bg_scroll_y = 0
 
         self.bullets.update(dt, surf)
         self.player.update(dt, self.last_time)
@@ -99,8 +116,14 @@ class Jogo(GameState):
             self.done = True
 
     def draw(self, surf=screen):
-        vertical(surf, False, BACKGROUND_COLOR_GAME_1, BACKGROUND_COLOR_GAME_2)
-        self.background_fall.draw(surf)
+        
+        # Fundo com rolagem vertical contínua
+        bg = self.backgrounds[(self.level - 1) % len(self.backgrounds)]
+        bg = pygame.transform.scale(bg, config.window_size)
+
+        surf.blit(bg, (0, -config.window_size[1] + self.bg_scroll_y))
+        surf.blit(bg, (0, self.bg_scroll_y))
+
         self.player.draw(surf)
 
         vida_x = config.window_size[0] - 190
