@@ -3,6 +3,7 @@ from elementos.Inimigo import *
 from elementos.Jogador import Player
 
 from states.Menu import Menu
+from states.Tutorial import Tutorial
 from states.Pausa import *
 from states.GameState import GameState
 from states.GameOver import *
@@ -171,7 +172,7 @@ class ExecutorDoJogo:
         sys.exit()
 
     def renderizar(self):
-        pygame.display.set_caption(f'Shoot \'em Up - FPS: {int(clock.get_fps())}')
+        pygame.display.set_caption('Tiro Certeiro')
         clock.tick(FRAME_RATE)
         pygame.display.update()
         self.estado_atual.draw(self.tela)
@@ -183,6 +184,7 @@ if __name__ == "__main__":
         "Game":     Jogo(),
         "Pausa":    Pausa(),
         "Exit":     Exit(),
-        "GameOver": GameOver()
+        "GameOver": GameOver(),
+        "Tutorial": Tutorial() 
     }
     ExecutorDoJogo(tela, estados, "Menu")

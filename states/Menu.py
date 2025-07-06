@@ -21,9 +21,9 @@ class Menu(GameState):
     def update(self, surf=screen):
         dt, self.last_time = delta_time(self.last_time)
         self.fall.update(-3, 0)
-        title_text("Shoot\'em Up", randint(1,5)+config.window_size[0]/2, 20*math.sin(2 * math.pi * pygame.time.get_ticks()/1000)+config.window_size[1] / 2 - 400)
+        title_text("Tiro Certeiro", randint(1,5)+config.window_size[0]/2, 20*math.sin(2 * math.pi * pygame.time.get_ticks()/1000)+config.window_size[1] / 2 - 400)
         vertical(surf, False, BACKGROUND_COLOR_MENU_1, BACKGROUND_COLOR_MENU_2)
-        MenuMaker(['COMEÇAR', 'SAIR'], __class__.__name__, self.selected, surf)
+        MenuMaker(['COMEÇAR',  'COMO JOGAR', 'SAIR'], __class__.__name__, self.selected, surf)
 
     def get_event(self, event):
         if event.type == KEYDOWN:
@@ -45,6 +45,9 @@ class Menu(GameState):
                     self.next_state = 'Game'
                     self.done = True
                 elif self.selected == 1:
+                    self.next_state = 'Tutorial'
+                    self.done = True
+                elif self.selected == 2:
                     pygame.quit()
                     sys.exit()
 

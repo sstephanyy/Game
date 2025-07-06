@@ -2,6 +2,7 @@ import pygame
 from time import time
 import pygame.image
 
+from constants.global_var import *
 from elementos.Bala import Bala
 from constants.global_func import *
 from constants.global_var import *
